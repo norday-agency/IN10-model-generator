@@ -19,7 +19,7 @@ To use the generator, add the following script to your package.json (so within
 
 The script requires this argument
 
-`--apiBase=` followed by the base endpoint of the API.
+`--apiVar=` followed by the variable name of the env var in your env that contains endpoint of the API.
 
 And accepts the following optional arguments:
 `--dir=` followd by the folder in the root where you want the models to be created (defaults to `/models`)
@@ -27,7 +27,8 @@ And accepts the following optional arguments:
 Note that this arg should be added within the script in your package.json,
 e.g.
 
-`"generate-model": "model-generator --apiBase=https://in10.nl/api --dir=middleware/models`
+`"generate-model": "model-generator --apiVar=API_URL --dir=middleware/models`
+(so this example needs something like `API_URL=https://api.in10.nl/nl/` in your .env)
 
 Then run this with
 `npm run generate-model`

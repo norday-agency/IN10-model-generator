@@ -10,14 +10,21 @@ const {
     jsonInputForTargetLanguage,
 } = require("quicktype-core");
 const { format } = require("date-fns");
+const dotenv = require('dotenv');
+dotenv.config();
 
+const { apiVar, dir } = argv;
 
-const { apiBase, dir } = argv;
-
-if(!apiBase) {
-    console.error(`No base set for your API urls, set like this "npm run model --apiBase=https://api.in10.nl/api/website/v1.0/"`);
+if(!apiVar) {
+    console.error(`No env reference set for your API urls, set like this "npm run model --apiVar=NEXT_PUBLIC_API_URL"`);
     return;
 }
+if(!process.env[apiVar]) {
+    console.error(`Env var ${apiVar} is not in your env file.`);
+    return;
+}
+
+const apiBase = process.env[apiVar];
 
 const baseDir = dir || "models";
 

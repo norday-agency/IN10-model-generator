@@ -5,7 +5,7 @@
   "description": "Generates models for API calls and quicktypes endpoints",
   "main": "cli.js",
   "scripts": {
-    "model": "node cli --apiBase=https://api.rotterdampas.nl/admin/v1.0/"
+    "model": "node cli --apiVar=NEXT_PUBLIC_API_URL"
   },
   "bin": {
     "model-generator": "./cli.js"
@@ -23,6 +23,7 @@
   "homepage": "https://github.com/IN10/IN10-model-generator#readme",
   "dependencies": {
     "date-fns": "^2.28.0",
+    "dotenv": "^10.0.0",
     "fs": "0.0.1-security",
     "inquirer": "^7.0.0",
     "quicktype-core": "^6.0.70",
