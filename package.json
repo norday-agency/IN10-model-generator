@@ -1,0 +1,32 @@
+{
+  "name": "in10-model-generator",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Generates models for API calls and quicktypes endpoints",
+  "main": "cli.js",
+  "scripts": {
+    "model": "node cli --apiBase=https://api.rotterdampas.nl/admin/v1.0/"
+  },
+  "bin": {
+    "model-generator": "./cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IN10/IN10-component-generator.git"
+  },
+  "keywords": [],
+  "author": "Jules Verdijk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IN10/IN10-model-generator/issues"
+  },
+  "homepage": "https://github.com/IN10/IN10-model-generator#readme",
+  "dependencies": {
+    "date-fns": "^2.28.0",
+    "fs": "0.0.1-security",
+    "inquirer": "^7.0.0",
+    "quicktype-core": "^6.0.70",
+    "replace-in-file": "^3.4.2",
+    "yargs": "^15.0.2"
+  }
+}
