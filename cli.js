@@ -134,7 +134,7 @@ function createModelFiles(
             }
         });
 
-        endpoint && fetchAndTypeAndWriteToFile(`${writeDir}/${modelNamePascal}.transform.d.ts`, modelName, endpoint)
+        endpoint && fetchAndTypeAndWriteToFile(`${writeDir}/${modelNamePascal}`, modelName, endpoint)
     } else {
         console.error("Model already exists!");
         return false;
@@ -158,29 +158,32 @@ function questionUpdateModel() {
     const modelsInBaseDir = fs.readdirSync(baseDir);
 
     if(modelsInBaseDir.length > 0) {
-        exisitingModelQuestion.choices = modelsInBaseDir;
+        exisitingModelQuestion.choices = ["All", ...modelsInBaseDir];
     }
 
     const questions = [
         exisitingModelQuestion,
-        {
-            name: "new-endpoint",
-            type: "input",
-            message: `Does the model have a new endpoint (empty to keep endpoint): ${apiBase}`
-        },
     ];
     inquirer.prompt(questions).then(answers => {
         const modelName = answers["model-name"];
-        const newEndpoint = answers["new-endpoint"];
-        updateModelFiles(modelName, newEndpoint);
+        if(modelName === "All") {
+            updateAllModelFiles(modelsInBaseDir);
+        } else {
+            updateModelFiles(modelName);
+        }
     })
 }
+function updateAllModelFiles(modelsInBaseDir) {
+    modelsInBaseDir.forEach(modelName => {
+        updateModelFiles(modelName);
+    });
 
-function updateModelFiles(modelName, newEndpoint) {
+    console.log(`Updated all models. Make sure to run typescript or use your IDE to detect differences in data structures or typings`);
+}
+
+async function updateModelFiles(modelName) {
 
     const modelFile = `${baseDir}/${modelName}/${modelName}.ts`;
-    const quickTypedFile = `${baseDir}/${modelName}/${modelName}.transform.d.ts`;
-    
 
     const contents = fs.readFileSync(modelFile, "utf8");
 
@@ -205,6 +208,16 @@ function updateModelFiles(modelName, newEndpoint) {
         return false;
     }
 
+    
+    const answers = await inquirer.prompt([
+        {
+            name: "new-endpoint",
+            type: "input",
+            message: `Does the model have a new endpoint (empty to keep endpoint, do not use for All update): ${apiBase}`
+        }]);
+
+    let newEndpoint = answers["new-endpoint"];
+
     if(newEndpoint && newEndpoint !== endpoint) {
         const replaceOptions = {
             files: modelFile,
@@ -224,8 +237,11 @@ function updateModelFiles(modelName, newEndpoint) {
         endpoint = newEndpoint;
     }
 
+    const fileBaseString = `${baseDir}/${modelName}/${modelName}`;
+
     if(endpoint) {
-        fetchAndTypeAndWriteToFile(quickTypedFile, modelName, endpoint);
+        fetchAndTypeAndWriteToFile(fileBaseString, modelName, endpoint);
+        console.log(`Updated typing for model ${modelName} with endpoint: ${endpoint}`)
     }
 }
 
@@ -236,9 +252,12 @@ function toPascalCase(string) {
     return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 }
 
-function fetchAndTypeAndWriteToFile(fileName, name, endpoint) {
+function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
     fetchAndType(`${name}IncomingType`, `${apiBase}${endpoint}`)
-        .then(contents => fs.writeFileSync(fileName, contents.join('\n'), "utf8"));
+        .then(({contents, jsonData }) => {
+            fs.writeFileSync(`${fileBase}.transform.d.ts`, contents.join('\n'), "utf8");
+            fs.writeFileSync(`${fileBase}.json`,  JSON.stringify(jsonData, null, 2), "utf8");
+        });
 }
 
 async function fetchAndType(name, endpoint){
@@ -247,8 +266,8 @@ async function fetchAndType(name, endpoint){
         try {
             const json = await data.json();
             const jsonData = json.data || json;
-            const {lines: contents} = await quicktypeJSON('typescript', name, JSON.stringify(jsonData), endpoint)
-            return contents
+            const {lines: contents} = await quicktypeJSON('typescript', name, JSON.stringify(jsonData), endpoint);
+            return {contents, jsonData};
         } catch (e) {
             console.log(`Error creating quicktype definition for endpoint "${endpoint}":`, e)
         }
