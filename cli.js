@@ -33,6 +33,13 @@ const templatesDir = `${__dirname}/model-template`;
 start();
 
 function start() {
+    console.log(`-----------------------------------------`);
+    console.log(`You are using a unstable version of IN10-model-generator`);
+    console.log(`This version is 100% dependent on react-query`);
+    console.log(`the generated models (not the transforms or autotyping) need heavy modification to fit your project`);
+    console.log(`Using cmsGet and withGlobalProps HOC to retrieve your data is recommended`)
+    console.log(`-----------------------------------------`);
+
     let updateOrGenQuestion = {
         name: "update-or-generate",
         type: "list",
