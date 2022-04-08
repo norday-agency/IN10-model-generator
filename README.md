@@ -39,9 +39,11 @@ Please note that this generator is specifically to be used within the IN10 setup
 model file containing transformation and endpoints but most importantly an automatic typing of and API endpoint. So if you don't use
 the model-configuration in your setup, you can still use the automatically generated and checked typings.
 
+Since v0.0.5 this is even more dependent on the IN10 setup and its usage of react-query. Only use this generator if you have react-query, withGlobalProps and cmsGet in your project.
+
 ## What it does
 
-The script generates an API-model for you. The script provides a wizard where u can choose the name of your model and the endpoint 
+The script generates a react query API-model for you. The script provides a wizard where u can choose the name of your model and the endpoint 
 that corresponds to the model. These models can then be used to fetch data from the server and transform it to the data-structure that is 
 used within your application, this transformation step is of course optional. More importantly the scripts also uses QuickType (quicktype-core) to automatically
 type the data that is returned for the endpoint, this typing can then be used within your application.
@@ -51,14 +53,15 @@ can overwrite the automatic typing with the new structure and typescript will wa
 The following files will be generated in a `/model` folder within the root of your project:
 
 - ModelName (dir)
-    - ModelName.ts (object containing the endpoint and reference to the transformation file)
-    - ModelName.transform.d.ts (automatically)
+    - ModelName.ts (object containing your react query hooks to be used in getServerSideProps and in page component)
+    - ModelName.api.ts (quicktyped typing of data from example endpoint)
     - ModelName.transform.ts (Function that can be used to tranform the incoming (API) typing to the internal typing (as in ModelName.type.ts))
-    - ModelName.type.ts (optional typing that is used within the application for this model if this differs from API typing)
+    - ModelNamePage.tsx (this is a pre setup page template that should be moved to your next pages directory and renamed accordingly)
 
 ## To do
 
--   Add option to generate a diff file between old and new typing when updating and endpoint
+- Add option to generate a diff file between old and new typing when updating and endpoint
+
 ## Other
 
 Slack me (Jules) for questions or additions.
