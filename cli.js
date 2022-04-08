@@ -263,7 +263,7 @@ function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
     fetchAndType(`${name}IncomingType`, `${apiBase}${endpoint}`)
         .then(({contents, jsonData }) => {
             fs.writeFileSync(`${fileBase}.transform.d.ts`, contents.join('\n'), "utf8");
-            fs.writeFileSync(`${fileBase}.json`,  JSON.stringify(jsonData, null, 2), "utf8");
+            fs.writeFileSync(`${fileBase}.response.json`,  JSON.stringify(jsonData, null, 2), "utf8");
         });
 }
 

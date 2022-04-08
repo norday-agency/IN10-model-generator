@@ -23,7 +23,7 @@ export const optionsMODELNAME: UseQueryOptions<MODELNAMEReturnType, Error> = {
     staleTime: 60000, // 1 minute
 };
 
-export const fetchMODELNAME = ({ slug, queryKey }: MODELNAMEParams) => {
+export const fetchMODELNAME = ({ slug, queryKey }: MODELNAMEParams): Promise<MODELNAMEReturnType> => {
     // Do your fetch here and then transform the returning data as you wish (or not)
     // Do not forget to replace QUICKTYPE_ENDPOINT if your endpoint is dynamic based on a slug for example
     // Use a regular fetch or cmsGet (note that cmsGet does not directly return MODELNAMEPropsType but is wrapped in CmsGetReturnType<MODELNAMEPropsType>
