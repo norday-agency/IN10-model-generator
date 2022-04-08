@@ -109,6 +109,8 @@ function createModelFiles(
                     writeFile = `${modelNamePascal}.transform.ts`;
                 } else if (fileWithoutExtension === "MODELNAME") {
                     writeFile = `${modelNamePascal}.ts`;
+                } else if (fileWithoutExtension === "MODELNAMEPage") {
+                    writeFile = `${modelNamePascal}Page.tsx`;
                 }
 
                 const writePath = `${writeDir}/${writeFile}`;

@@ -1,7 +1,7 @@
 import { MODELNAMEIncomingType } from "./MODELNAME.transform.d";
-import { MODELNAMEType } from "./MODELNAME.type";
+import { MODELNAMEPropsType } from "./MODELNAME";
 
-const MODELNAMETransform = (incoming: MODELNAMEIncomingType): MODELNAMEType => ({
+const MODELNAMETransform = (incoming: MODELNAMEIncomingType): MODELNAMEPropsType => ({
     ...incoming,
 });
 

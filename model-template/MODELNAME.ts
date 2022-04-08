@@ -25,9 +25,9 @@ export const optionsMODELNAME: UseQueryOptions<MODELNAMEReturnType, Error> = {
 
 export const fetchMODELNAME = ({ slug, queryKey }: MODELNAMEParams): Promise<MODELNAMEReturnType> => {
     // Do your fetch here and then transform the returning data as you wish (or not)
-    // Do not forget to replace QUICKTYPE_ENDPOINT if your endpoint is dynamic based on a slug for example
+    // Do not forget to replace MODEL_QUICKTYPE_ENDPOINT if your endpoint is dynamic based on a slug for example
     // Use a regular fetch or cmsGet (note that cmsGet does not directly return MODELNAMEPropsType but is wrapped in CmsGetReturnType<MODELNAMEPropsType>
-    // return cmsGet(QUICKTYPE_ENDPOINT, (data: any) => MODELNAMETransform(data));
+    // return cmsGet(`MODEL_QUICKTYPE_ENDPOINT`, (data: any) => MODELNAMETransform(data));
 }
 
 // Client side hook
