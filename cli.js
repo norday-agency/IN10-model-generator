@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 require("path");
+
 const inquirer = require("inquirer");
 const fs = require("fs");
 const replace = require("replace-in-file");
@@ -11,6 +12,7 @@ const {
 } = require("quicktype-core");
 const { format } = require("date-fns");
 const dotenv = require('dotenv');
+const Diff = require("diff");
 dotenv.config();
 
 const { apiVar, dir } = argv;
@@ -189,7 +191,6 @@ function updateAllModelFiles(modelsInBaseDir) {
 }
 
 async function updateModelFiles(modelName) {
-
     const modelFile = `${baseDir}/${modelName}/${modelName}.ts`;
 
     const contents = fs.readFileSync(modelFile, "utf8");
@@ -246,9 +247,10 @@ async function updateModelFiles(modelName) {
 
     const fileBaseString = `${baseDir}/${modelName}/${modelName}`;
 
+    const currentJsonFile = fs.readFileSync(`${fileBaseString}.response.json`, "utf8");
+    
     if(endpoint) {
-        fetchAndTypeAndWriteToFile(fileBaseString, modelName, endpoint);
-        console.log(`Updated typing for model ${modelName} with endpoint: ${endpoint}`)
+        fetchAndTypeAndWriteToFile(fileBaseString, modelName, endpoint, currentJsonFile);
     }
 }
 
@@ -259,11 +261,17 @@ function toPascalCase(string) {
     return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 }
 
-function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
+function fetchAndTypeAndWriteToFile(fileBase, name, endpoint, diff) {
     fetchAndType(`${name}IncomingType`, `${apiBase}${endpoint}`)
         .then(({contents, jsonData }) => {
+            const newJSON = JSON.stringify(jsonData, null, 2);
+            const oldJSON = diff;
+
             fs.writeFileSync(`${fileBase}.api.ts`, contents.join('\n'), "utf8");
             fs.writeFileSync(`${fileBase}.response.json`,  JSON.stringify(jsonData, null, 2), "utf8");
+            fs.writeFileSync(`${fileBase}.old.json`,  oldJSON, "utf8");
+            fs.writeFileSync(`${fileBase}.new.json`,  newJSON, "utf8");
+            fs.writeFileSync(`${fileBase}.diff.json`,  JSON.stringify(Diff.diffJson(oldJSON, newJSON)), "utf8");
         });
 }
 
