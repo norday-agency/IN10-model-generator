@@ -103,9 +103,7 @@ function createModelFiles(
                 const fileWithoutExtension = file.replace(".ts", "");
                 let writeFile = `${modelNamePascal}.ts`;
 
-                if (fileWithoutExtension === "MODELNAME.type") {
-                    writeFile = `${modelNamePascal}.type.ts`;
-                } else if (fileWithoutExtension === "MODELNAME.transform") {
+                if (fileWithoutExtension === "MODELNAME.transform") {
                     writeFile = `${modelNamePascal}.transform.ts`;
                 } else if (fileWithoutExtension === "MODELNAME") {
                     writeFile = `${modelNamePascal}.ts`;
@@ -264,7 +262,7 @@ function toPascalCase(string) {
 function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
     fetchAndType(`${name}IncomingType`, `${apiBase}${endpoint}`)
         .then(({contents, jsonData }) => {
-            fs.writeFileSync(`${fileBase}.transform.d.ts`, contents.join('\n'), "utf8");
+            fs.writeFileSync(`${fileBase}.api.ts`, contents.join('\n'), "utf8");
             fs.writeFileSync(`${fileBase}.response.json`,  JSON.stringify(jsonData, null, 2), "utf8");
         });
 }
