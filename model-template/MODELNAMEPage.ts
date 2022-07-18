@@ -11,9 +11,7 @@ import { MODELNAMEParams, prefetchMODELNAME, useMODELNAME } from "./MODELNAME";
 
 // After generation move this file to its folder in /pages/??? and change the filename to match your routing
 
-export type MODELNAMEPropsType = {
-
-};
+export type MODELNAMEPropsType = MODELNAMEIncomingType;
 
 export const getServerSideProps = withGlobalProps<MODELNAMEPropsType, MODELNAMEParams>(
     async (ctx: GetServerSidePropsContext, queryClient: QueryClient) => {
