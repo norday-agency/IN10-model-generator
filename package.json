@@ -1,11 +1,11 @@
 {
   "name": "in10-model-generator",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "private": true,
   "description": "Generates models for API calls and quicktypes endpoints",
   "main": "cli.js",
   "scripts": {
-    "model": "node cli --apiVar=NEXT_PUBLIC_API_URL"
+    "model": "node cli --apiVar=NEXT_PUBLIC_API_URL --defaultLocale=nl"
   },
   "bin": {
     "model-generator": "./cli.js"

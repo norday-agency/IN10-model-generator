@@ -13,10 +13,14 @@ const { format } = require("date-fns");
 const dotenv = require('dotenv');
 dotenv.config();
 
-const { apiVar, dir } = argv;
+const { apiVar, dir, defaultLocale } = argv;
 
 if(!apiVar) {
     console.error(`No env reference set for your API urls, set like this "npm run model --apiVar=NEXT_PUBLIC_API_URL"`);
+    return;
+}
+if(!defaultLocale) {
+    console.error(`No defaultLocale set for your API urls, set like this "npm run model --defaultLocale=nl"`);
     return;
 }
 if(!process.env[apiVar]) {
@@ -24,7 +28,7 @@ if(!process.env[apiVar]) {
     return;
 }
 
-const apiBase = process.env[apiVar];
+const apiBase = `${process.env[apiVar]}/${defaultLocale}`;
 
 const baseDir = dir || "models";
 
