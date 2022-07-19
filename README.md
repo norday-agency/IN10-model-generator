@@ -41,6 +41,14 @@ the model-configuration in your setup, you can still use the automatically gener
 
 Since v0.0.5 this is even more dependent on the IN10 setup and its usage of react-query. Only use this generator if you have react-query, withGlobalProps and cmsGet in your project.
 
+Since v0.0.9 it is even more intertwined with IN10-next-typescript-setup. To use the models in their current format, you need:
+- Types: Locales as named export in `[root]/types/locales.ts`
+- Types: ApiEndpoints as named export in `[root]/types/ApiEndpoints.ts`
+- Helper and types: cmsGet in `[root]/middleware/calls/cmsGet.ts`
+- Helper queryParamToString as default export in `[root]/helpers/queryParamToString.ts`
+- Dependency: `react-query` 
+- And of course Next and Typescript
+
 ## What it does
 
 The script generates a react query API-model for you. The script provides a wizard where u can choose the name of your model and the endpoint 

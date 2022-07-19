@@ -262,7 +262,7 @@ function toPascalCase(string) {
 function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
     fetchAndType(`${name}IncomingType`, `${apiBase}${endpoint}`)
         .then(({contents, jsonData }) => {
-            fs.writeFileSync(`${fileBase}.api.ts`, contents.join('\n'), "utf8");
+            fs.writeFileSync(`${fileBase}.types.ts`, contents.join('\n'), "utf8");
             fs.writeFileSync(`${fileBase}.response.json`,  JSON.stringify(jsonData, null, 2), "utf8");
         });
 }

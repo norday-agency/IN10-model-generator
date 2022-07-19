@@ -2,6 +2,7 @@ import React from 'react';
 import { QueryClient } from 'react-query';
 import { GetServerSidePropsContext } from 'next/types';
 import { MODELNAMEParams, prefetchMODELNAME, useMODELNAME } from "./MODELNAME";
+import { Locales } from '../types/locales';
 
 // This Page is highly dependent on a certain structure for your project:
 // - withGlobalProps
@@ -10,13 +11,12 @@ import { MODELNAMEParams, prefetchMODELNAME, useMODELNAME } from "./MODELNAME";
 // - _app that injects queryParams into component
 
 // After generation move this file to its folder in /pages/??? and change the filename to match your routing
-
 export type MODELNAMEPropsType = MODELNAMEIncomingType;
 
 export const getServerSideProps = withGlobalProps<MODELNAMEPropsType, MODELNAMEParams>(
     async (ctx: GetServerSidePropsContext, queryClient: QueryClient) => {
         const slug = queryParamToString(ctx.query.slug);
-        const queryParams: MODELNAMEParams = { slug, queryKey: `MODELNAME-${slug}` };
+        const queryParams: MODELNAMEParams = { slug, queryKey: `MODELNAME-${slug}`, locale: ctx.locale as Locales };
         await prefetchMODELNAME(queryClient, queryParams);
 
         return queryParams;
