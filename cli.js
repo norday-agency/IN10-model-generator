@@ -86,70 +86,75 @@ function questionNewModel() {
     })
 }
 
-function createModelFiles(
+async function createModelFiles(
     modelName,
     endpoint
 ) {
     const filesToCreate = fs.readdirSync(templatesDir);
-    let firstItem = true;
 
     const modelNamePascal = toPascalCase(modelName);
     const writeDir = `${baseDir}/${modelNamePascal}`;
 
-    if (!fs.existsSync(`${baseDir}/${modelName}`)) {
-        filesToCreate.forEach(file => {
-            const origFilePath = `${templatesDir}/${file}`;
-            // get stats about the current file
-            const stats = fs.statSync(origFilePath);
+    let dataIsArray = false;
 
-            if (stats.isFile()) {
-                const contents = fs.readFileSync(origFilePath, "utf8");
-                const fileWithoutExtension = file.replace(".ts", "");
-                let writeFile = `${modelNamePascal}.ts`;
-
-                if (fileWithoutExtension === "MODELNAME.transform") {
-                    writeFile = `${modelNamePascal}.transform.ts`;
-                } else if (fileWithoutExtension === "MODELNAME") {
-                    writeFile = `${modelNamePascal}.ts`;
-                } else if (fileWithoutExtension === "MODELNAMEPage") {
-                    writeFile = `${modelNamePascal}Page.tsx`;
-                }
-
-                const writePath = `${writeDir}/${writeFile}`;
-
-                if (firstItem) {
-                    try {
-                        fs.mkdirSync(writeDir, { recursive: true });
-                    } catch (e) {
-                        console.log(e);
-                    }
-
-                    firstItem = false;
-                }
-
-                try {
-                    fs.writeFileSync(writePath, contents, "utf8");
-                } catch (e) {
-                    console.log(e);
-                }
-
-                const replaceOptions = {
-                    files: writePath,
-                    from: [/MODELNAME/g, /MODEL_QUICKTYPE_ENDPOINT/g],
-                    to: [modelNamePascal, endpoint]
-                };
-                replace(replaceOptions)
-                    .catch(() => {
-                        console.log("Failed at replacing name");
-                    });
-            }
-        });
-
-        endpoint && fetchAndTypeAndWriteToFile(`${writeDir}/${modelNamePascal}`, modelName, endpoint)
-    } else {
-        console.error("Model already exists!");
+    if (fs.existsSync(`${baseDir}/${modelName}`)) {
+        console.error("Model (directory) already exists!");
         return false;
+    } else {
+        await fs.mkdirSync(writeDir, {recursive: true});
     }
+
+    if(endpoint) {
+        // If the data is an array, quicktype types is as a regular object, so add some fallbacks
+        dataIsArray = await fetchAndTypeAndWriteToFile(`${writeDir}/${modelNamePascal}`, modelName, endpoint);
+        if(dataIsArray) {
+            console.log(`WARNING Data from API is an array (probably an overview page). Incoming types will be typed as object but are actually an array! The models are updated to reflect this, but be aware.`);
+        }
+    }
+
+    filesToCreate.forEach(file => {
+        const origFilePath = `${templatesDir}/${file}`;
+        // get stats about the current file
+        const stats = fs.statSync(origFilePath);
+
+        if (stats.isFile()) {
+            const contents = fs.readFileSync(origFilePath, "utf8");
+            const fileWithoutExtension = file.replace(".ts", "");
+            let writeFile = `${modelNamePascal}.ts`;
+
+            if (fileWithoutExtension === "MODELNAME.transform") {
+                writeFile = `${modelNamePascal}.transform.ts`;
+            } else if (fileWithoutExtension === "MODELNAME") {
+                writeFile = `${modelNamePascal}.ts`;
+            } else if (fileWithoutExtension === "MODELNAMEPage") {
+                writeFile = `${modelNamePascal}Page.tsx`;
+            }
+
+            const writePath = `${writeDir}/${writeFile}`;
+
+
+            try {
+                fs.writeFileSync(writePath, contents, "utf8");
+            } catch (e) {
+                console.log(e);
+            }
+
+            const replaceOptions = dataIsArray ? {
+                files: writePath,
+                from: [ '(incoming: MODELNAMEIncomingType): MODELNAMEPropsType => incoming', 'MODELNAMEPropsType = MODELNAMEIncomingType', /MODELNAME/g, /MODEL_QUICKTYPE_ENDPOINT/g],
+                to: [`(incoming: ${modelNamePascal}IncomingType[]): ${modelNamePascal}PropsType => incoming`, `${modelNamePascal}PropsType = ${modelNamePascal}IncomingType[]`, modelNamePascal, endpoint]
+            }: {
+                files: writePath,
+                from: [/MODELNAME/g, /MODEL_QUICKTYPE_ENDPOINT/g],
+                to: [modelNamePascal, endpoint]
+            };
+
+            replace(replaceOptions)
+                .catch(() => {
+                    console.log("Failed at replacing name");
+                });
+        }
+    });
 
     console.log(`-----------------------------------------`);
     console.log(`Your model ${modelNamePascal} has been created in ${writeDir}/${modelNamePascal}.ts`);
@@ -186,13 +191,13 @@ function questionUpdateModel() {
 }
 function updateAllModelFiles(modelsInBaseDir) {
     modelsInBaseDir.forEach(modelName => {
-        updateModelFiles(modelName);
+        updateModelFiles(modelName, true);
     });
 
     console.log(`Updated all models. Make sure to run typescript or use your IDE to detect differences in data structures or typings`);
 }
 
-async function updateModelFiles(modelName) {
+async function updateModelFiles(modelName, partOfAllUpdate) {
 
     const modelFile = `${baseDir}/${modelName}/${modelName}.ts`;
 
@@ -219,34 +224,35 @@ async function updateModelFiles(modelName) {
         return false;
     }
 
-    
-    const answers = await inquirer.prompt([
-        {
-            name: "new-endpoint",
-            type: "input",
-            message: `Does the model have a new endpoint (empty to keep endpoint, do not use for All update): ${apiBase}/`
-        }]);
+   if(partOfAllUpdate) {
+       const answers = await inquirer.prompt([
+           {
+               name: "new-endpoint",
+               type: "input",
+               message: `Does the model have a new endpoint (empty to keep endpoint, do not use for All update): ${apiBase}/`
+           }]);
 
-    let newEndpoint = answers["new-endpoint"];
+       let newEndpoint = answers["new-endpoint"];
 
-    if(newEndpoint && newEndpoint !== endpoint) {
-        const replaceOptions = {
-            files: modelFile,
-            from: [endpoint],
-            to: [newEndpoint]
-        };
+       if(newEndpoint && newEndpoint !== endpoint) {
+           const replaceOptions = {
+               files: modelFile,
+               from: [endpoint],
+               to: [newEndpoint]
+           };
 
-        replace(replaceOptions)
-            .catch(() => {
-                console.log("Failed at replacing name");
-            });
+           replace(replaceOptions)
+               .catch(() => {
+                   console.log("Failed at replacing name");
+               });
 
-        console.warn(`You have changed the quicktype endpoint for model ${baseDir}/${modelName}/${modelName}.ts`);
-        console.warn(`The QUICKTYPE_EXAMPLE const has automatically been updated`);
-        console.warn(`DO update the endpoint: () => string variable in the model to match the quicktype endpoint or else typing check will fail`);
+           console.warn(`You have changed the quicktype endpoint for model ${baseDir}/${modelName}/${modelName}.ts`);
+           console.warn(`The QUICKTYPE_EXAMPLE const has automatically been updated`);
+           console.warn(`DO update the endpoint: () => string variable in the model to match the quicktype endpoint or else typing check will fail`);
 
-        endpoint = newEndpoint;
-    }
+           endpoint = newEndpoint;
+       }
+   }
 
     const fileBaseString = `${baseDir}/${modelName}/${modelName}`;
 
@@ -263,12 +269,21 @@ function toPascalCase(string) {
     return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 }
 
-function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
-    fetchAndType(`${name}IncomingType`, `${apiBase}/${endpoint}`)
-        .then(({contents, jsonData }) => {
+async function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
+    let isArray = false;
+    try {
+        const { contents, jsonData } = await fetchAndType(`${name}IncomingType`, `${apiBase}/${endpoint}`);
+        if(contents) {
             fs.writeFileSync(`${fileBase}.types.ts`, contents.join('\n'), "utf8");
+        }
+        if(jsonData) {
             fs.writeFileSync(`${fileBase}.response.json`,  JSON.stringify(jsonData, null, 2), "utf8");
-        });
+        }
+        isArray = Array.isArray(jsonData);
+    } catch (e) {
+        console.error(e);
+    }
+    return isArray;
 }
 
 async function fetchAndType(name, endpoint){
@@ -278,6 +293,7 @@ async function fetchAndType(name, endpoint){
             const json = await data.json();
             const jsonData = json.data || json;
             const {lines: contents} = await quicktypeJSON('typescript', name, JSON.stringify(jsonData), endpoint);
+
             return {contents, jsonData};
         } catch (e) {
             console.log(`Error creating quicktype definition for endpoint "${endpoint}":`, e)
