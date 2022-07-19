@@ -76,7 +76,7 @@ function questionNewModel() {
         {
             name: "model-endpoint",
             type: "input",
-            message: `API endpoint to use for quicktyping: ${apiBase}`
+            message: `API endpoint to use for quicktyping: ${apiBase}/`
         },
     ];
     inquirer.prompt(questions).then(answers => {
