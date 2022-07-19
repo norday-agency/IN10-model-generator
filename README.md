@@ -45,6 +45,7 @@ Since v0.0.9 it is even more intertwined with IN10-next-typescript-setup. To use
 - Types: Locales as named export in `[root]/types/locales.ts`
 - Types: ApiEndpoints as named export in `[root]/types/ApiEndpoints.ts`
 - Helper and types: cmsGet in `[root]/middleware/calls/cmsGet.ts`
+- Helper withGlobalProps as default export in `[root]/middleware/withGlobalProps.ts`
 - Helper queryParamToString as default export in `[root]/helpers/queryParamToString.ts`
 - Dependency: `react-query` 
 - And of course Next and Typescript

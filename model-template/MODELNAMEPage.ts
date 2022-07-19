@@ -3,6 +3,10 @@ import { QueryClient } from 'react-query';
 import { GetServerSidePropsContext } from 'next/types';
 import { MODELNAMEParams, prefetchMODELNAME, useMODELNAME } from "./MODELNAME";
 import { Locales } from '../types/locales';
+import { MODELNAMEIncomingType } from '../models/MODELNAME/MODELNAME.types';
+import { CmsResponse } from '../middleware/calls/cmsGet';
+import { withGlobalProps } from '../middleware/withGlobalProps';
+import queryParamToString from '../helpers/queryParamToString';
 
 // This Page is highly dependent on a certain structure for your project:
 // - withGlobalProps
@@ -27,7 +31,7 @@ const MODELNAMEPage: React.FC<MODELNAMEParams> = (params) => {
     const { data } = useMODELNAME(params);
     if (!data || data.type !== CmsResponse.OK || !data.pageData) return null;
 
-    return <>Your page</>;
+    return <>Your MODELNAMEPage</>;
 };
 
 export default MODELNAMEPage;

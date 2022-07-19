@@ -1,5 +1,5 @@
 import { MODELNAMEPropsType } from "./MODELNAMEPage";
-import { MODELNAMEIncomingType } from "./MODELNAME.api";
+import { MODELNAMEIncomingType } from "./MODELNAME.types";
 
 const MODELNAMETransform = (incoming: MODELNAMEIncomingType): MODELNAMEPropsType => ({
     ...incoming,

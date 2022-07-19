@@ -1,9 +1,10 @@
 import MODELNAMETransform from "./MODELNAME.transform";
 import { MODELNAMEPropsType } from "./MODELNAMEPage";
 import { QueryClient, useQuery, UseQueryOptions } from 'react-query';
-import { MODELNAMEIncomingType } from "./MODELNAME.api";
+import { MODELNAMEIncomingType } from "./MODELNAME.types";
 import { Locales } from '../../types/locales';
 import { ApiEndpoints } from '../../types/apiEndpoints';
+import cmsGet, { CmsGetReturnType } from '../../middleware/calls/cmsGet';
 
 // DO NOT REMOVE OR RENAME THIS VARIABLE. This is used to update the automatic typing of the endpoint
 const QUICKTYPE_ENDPOINT = "MODEL_QUICKTYPE_ENDPOINT";
