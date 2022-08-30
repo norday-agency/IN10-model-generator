@@ -4,28 +4,24 @@ const inquirer = require("inquirer");
 const fs = require("fs");
 const replace = require("replace-in-file");
 const argv = require("yargs").argv;
-const {
-    quicktype,
-    InputData,
-    jsonInputForTargetLanguage,
-} = require("quicktype-core");
+const { quicktype, InputData, jsonInputForTargetLanguage } = require("quicktype-core");
 const { format } = require("date-fns");
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 dotenv.config();
 
 const { apiVar, dir, defaultLocale } = argv;
 
-if(!apiVar) {
-    console.error(`No env reference set for your API urls, set like this "npm run model --apiVar=NEXT_PUBLIC_API_URL"`);
-    return;
+if (!apiVar) {
+  console.error(`No env reference set for your API urls, set like this "npm run model --apiVar=NEXT_PUBLIC_API_URL"`);
+  return;
 }
-if(!defaultLocale) {
-    console.error(`No defaultLocale set for your API urls, set like this "npm run model --defaultLocale=nl"`);
-    return;
+if (!defaultLocale) {
+  console.error(`No defaultLocale set for your API urls, set like this "npm run model --defaultLocale=nl"`);
+  return;
 }
-if(!process.env[apiVar]) {
-    console.error(`Env var ${apiVar} is not in your env file.`);
-    return;
+if (!process.env[apiVar]) {
+  console.error(`Env var ${apiVar} is not in your env file.`);
+  return;
 }
 
 const apiBase = `${process.env[apiVar]}/${defaultLocale}`;
@@ -37,296 +33,323 @@ const templatesDir = `${__dirname}/model-template`;
 start();
 
 function start() {
-    console.log(`-----------------------------------------`);
-    console.log(`You are using a unstable version of IN10-model-generator`);
-    console.log(`This version is 100% dependent on react-query`);
-    console.log(`the generated models (not the transforms or autotyping) need heavy modification to fit your project`);
-    console.log(`Using cmsGet and withGlobalProps HOC to retrieve your data is recommended`)
-    console.log(`-----------------------------------------`);
+  console.log(`-----------------------------------------`);
+  console.log(`You are using a unstable version of IN10-model-generator`);
+  console.log(`This version is 100% dependent on react-query`);
+  console.log(`the generated models (not the transforms or autotyping) need heavy modification to fit your project`);
+  console.log(`Using cmsGet and withGlobalProps HOC to retrieve your data is recommended`);
+  console.log(`-----------------------------------------`);
 
-    let updateOrGenQuestion = {
-        name: "update-or-generate",
-        type: "list",
-        message: "Do you want to generate or update a model?",
-        choices: ["generate", "update"]
+  let updateOrGenQuestion = {
+    name: "update-or-generate",
+    type: "list",
+    message: "Do you want to generate or update a model?",
+    choices: ["generate", "update"],
+  };
+
+  inquirer.prompt([updateOrGenQuestion]).then((answers) => {
+    const update = answers["update-or-generate"];
+    if (update === "generate") {
+      questionNewModel();
+    } else {
+      questionUpdateModel();
     }
-
-    inquirer.prompt([updateOrGenQuestion]).then(answers => {
-        const update = answers["update-or-generate"];
-        if(update === 'generate') {
-            questionNewModel();
-        } else {
-            questionUpdateModel();
-        }
-    });
+  });
 }
 
 function questionNewModel() {
-    const questions = [
-        {
-            name: "model-name",
-            type: "input",
-            message: "Model name:",
-            validate: function(input) {
-                if (/^([A-Za-z\-\_\d])+$/.test(input)) return true;
-                else
-                    return "Model name may only include letters, numbers, underscores and dashes.";
-            }
-        },
-        {
-            name: "model-endpoint",
-            type: "input",
-            message: `API endpoint to use for quicktyping: ${apiBase}/`
-        },
-    ];
-    inquirer.prompt(questions).then(answers => {
-        const modelName = answers["model-name"];
-        const endpoint = answers["model-endpoint"];
-        createModelFiles(modelName, endpoint);
-    })
+  const questions = [
+    {
+      name: "model-name",
+      type: "input",
+      message: "Model name:",
+      validate: function (input) {
+        if (/^([A-Za-z\-\_\d])+$/.test(input)) return true;
+        else return "Model name may only include letters, numbers, underscores and dashes.";
+      },
+    },
+    {
+      name: "model-endpoint",
+      type: "input",
+      message: `API endpoint to use for quicktyping: ${apiBase}/`,
+    },
+  ];
+  inquirer.prompt(questions).then((answers) => {
+    const modelName = answers["model-name"];
+    const endpoint = answers["model-endpoint"];
+    createModelFiles(modelName, endpoint);
+  });
 }
 
-async function createModelFiles(
-    modelName,
-    endpoint
-) {
-    const filesToCreate = fs.readdirSync(templatesDir);
+async function createModelFiles(modelName, endpoint) {
+  const filesToCreate = fs.readdirSync(templatesDir);
 
-    const modelNamePascal = toPascalCase(modelName);
-    const writeDir = `${baseDir}/${modelNamePascal}`;
+  const modelNamePascal = toPascalCase(modelName);
+  const writeDir = `${baseDir}/${modelNamePascal}`;
 
-    let dataIsArray = false;
+  let dataIsArray = false;
 
-    if (fs.existsSync(`${baseDir}/${modelName}`)) {
-        console.error("Model (directory) already exists!");
-        return false;
-    } else {
-        await fs.mkdirSync(writeDir, {recursive: true});
+  if (fs.existsSync(`${baseDir}/${modelName}`)) {
+    console.error("Model (directory) already exists!");
+    return false;
+  } else {
+    await fs.mkdirSync(writeDir, { recursive: true });
+  }
+
+  if (endpoint) {
+    // If the data is an array, quicktype types is as a regular object, so add some fallbacks
+    dataIsArray = await fetchAndTypeAndWriteToFile(`${writeDir}/${modelNamePascal}`, modelName, endpoint);
+    if (dataIsArray) {
+      console.log(
+        `WARNING Data from API is an array (probably an overview page). Incoming types will be typed as object but are actually an array! The models are updated to reflect this, but be aware.`
+      );
     }
+  }
 
-    if(endpoint) {
-        // If the data is an array, quicktype types is as a regular object, so add some fallbacks
-        dataIsArray = await fetchAndTypeAndWriteToFile(`${writeDir}/${modelNamePascal}`, modelName, endpoint);
-        if(dataIsArray) {
-            console.log(`WARNING Data from API is an array (probably an overview page). Incoming types will be typed as object but are actually an array! The models are updated to reflect this, but be aware.`);
-        }
+  filesToCreate.forEach((file) => {
+    const origFilePath = `${templatesDir}/${file}`;
+    // get stats about the current file
+    const stats = fs.statSync(origFilePath);
+
+    if (stats.isFile()) {
+      const contents = fs.readFileSync(origFilePath, "utf8");
+      const fileWithoutExtension = file.replace(".ts", "");
+      let writeFile = `${modelNamePascal}.ts`;
+
+      if (fileWithoutExtension === "MODELNAME.transform") {
+        writeFile = `${modelNamePascal}.transform.ts`;
+      } else if (fileWithoutExtension === "MODELNAME") {
+        writeFile = `${modelNamePascal}.ts`;
+      } else if (fileWithoutExtension === "MODELNAMEPage") {
+        writeFile = `${modelNamePascal}Page.tsx`;
+      }
+
+      const writePath = `${writeDir}/${writeFile}`;
+
+      try {
+        fs.writeFileSync(writePath, contents, "utf8");
+      } catch (e) {
+        console.log(e);
+      }
+
+      const replaceOptions = dataIsArray
+        ? {
+            files: writePath,
+            from: [
+              "(incoming: MODELNAMEIncomingType): MODELNAMEPropsType => incoming",
+              "MODELNAMEPropsType = MODELNAMEIncomingType",
+              /MODELNAME/g,
+              /MODEL_QUICKTYPE_ENDPOINT/g,
+            ],
+            to: [
+              `(incoming: ${modelNamePascal}IncomingType[]): ${modelNamePascal}PropsType => incoming`,
+              `${modelNamePascal}PropsType = ${modelNamePascal}IncomingType[]`,
+              modelNamePascal,
+              endpoint,
+            ],
+          }
+        : {
+            files: writePath,
+            from: [/MODELNAME/g, /MODEL_QUICKTYPE_ENDPOINT/g],
+            to: [modelNamePascal, endpoint],
+          };
+
+      replace(replaceOptions).catch(() => {
+        console.log("Failed at replacing name");
+      });
     }
+  });
 
-    filesToCreate.forEach(file => {
-        const origFilePath = `${templatesDir}/${file}`;
-        // get stats about the current file
-        const stats = fs.statSync(origFilePath);
-
-        if (stats.isFile()) {
-            const contents = fs.readFileSync(origFilePath, "utf8");
-            const fileWithoutExtension = file.replace(".ts", "");
-            let writeFile = `${modelNamePascal}.ts`;
-
-            if (fileWithoutExtension === "MODELNAME.transform") {
-                writeFile = `${modelNamePascal}.transform.ts`;
-            } else if (fileWithoutExtension === "MODELNAME") {
-                writeFile = `${modelNamePascal}.ts`;
-            } else if (fileWithoutExtension === "MODELNAMEPage") {
-                writeFile = `${modelNamePascal}Page.tsx`;
-            }
-
-            const writePath = `${writeDir}/${writeFile}`;
-
-
-            try {
-                fs.writeFileSync(writePath, contents, "utf8");
-            } catch (e) {
-                console.log(e);
-            }
-
-            const replaceOptions = dataIsArray ? {
-                files: writePath,
-                from: [ '(incoming: MODELNAMEIncomingType): MODELNAMEPropsType => incoming', 'MODELNAMEPropsType = MODELNAMEIncomingType', /MODELNAME/g, /MODEL_QUICKTYPE_ENDPOINT/g],
-                to: [`(incoming: ${modelNamePascal}IncomingType[]): ${modelNamePascal}PropsType => incoming`, `${modelNamePascal}PropsType = ${modelNamePascal}IncomingType[]`, modelNamePascal, endpoint]
-            }: {
-                files: writePath,
-                from: [/MODELNAME/g, /MODEL_QUICKTYPE_ENDPOINT/g],
-                to: [modelNamePascal, endpoint]
-            };
-
-            replace(replaceOptions)
-                .catch(() => {
-                    console.log("Failed at replacing name");
-                });
-        }
-    });
-
-    console.log(`-----------------------------------------`);
-    console.log(`Your model ${modelNamePascal} has been created in ${writeDir}/${modelNamePascal}.ts`);
-    console.log(`To finish the model please replace the "endpoint: () => QUICKTYPE_ENDPOINT" part with the actual endpoint, especially when the endpoint is dynamic or based on query or url params.`);
-    console.log(`DO NOT remove the "const QUICKTYPE_ENDPOINT = XXX" line, this is used to update the endpoint typings`);
-    console.log(`-----------------------------------------`);
+  console.log(`-----------------------------------------`);
+  console.log(`Your model ${modelNamePascal} has been created in ${writeDir}/${modelNamePascal}.ts`);
+  console.log(
+    `To finish the model please replace the "endpoint: () => QUICKTYPE_ENDPOINT" part with the actual endpoint, especially when the endpoint is dynamic or based on query or url params.`
+  );
+  console.log(`DO NOT remove the "const QUICKTYPE_ENDPOINT = XXX" line, this is used to update the endpoint typings`);
+  console.log(`-----------------------------------------`);
 }
 
 function questionUpdateModel() {
-    let exisitingModelQuestion = {
-        name: "model-name",
-        type: "list",
-        message: "What model do you want to update?",
-        choices: []
-    };
+  let exisitingModelQuestion = {
+    name: "model-name",
+    type: "list",
+    message: "What model do you want to update?",
+    choices: [],
+  };
 
-    const modelsInBaseDir = fs.readdirSync(baseDir);
+  const modelsInBaseDir = fs.readdirSync(baseDir);
 
-    if(modelsInBaseDir.length > 0) {
-        exisitingModelQuestion.choices = ["All", ...modelsInBaseDir];
+  if (modelsInBaseDir.length > 0) {
+    exisitingModelQuestion.choices = ["All", ...modelsInBaseDir];
+  }
+
+  const questions = [exisitingModelQuestion];
+  inquirer.prompt(questions).then((answers) => {
+    const modelName = answers["model-name"];
+    if (modelName === "All") {
+      updateAllModelFiles(modelsInBaseDir);
+    } else {
+      updateModelFiles(modelName);
     }
-
-    const questions = [
-        exisitingModelQuestion,
-    ];
-    inquirer.prompt(questions).then(answers => {
-        const modelName = answers["model-name"];
-        if(modelName === "All") {
-            updateAllModelFiles(modelsInBaseDir);
-        } else {
-            updateModelFiles(modelName);
-        }
-    })
+  });
 }
 function updateAllModelFiles(modelsInBaseDir) {
-    modelsInBaseDir.forEach(modelName => {
-        updateModelFiles(modelName, true);
-    });
+  modelsInBaseDir.forEach((modelName) => {
+    updateModelFiles(modelName, true);
+  });
 
-    console.log(`Updated all models. Make sure to run typescript or use your IDE to detect differences in data structures or typings`);
+  console.log(
+    `Updated all models. Make sure to run typescript or use your IDE to detect differences in data structures or typings`
+  );
 }
 
 async function updateModelFiles(modelName, partOfAllUpdate) {
+  const modelFile = `${baseDir}/${modelName}/${modelName}.ts`;
 
-    const modelFile = `${baseDir}/${modelName}/${modelName}.ts`;
+  const contents = fs.readFileSync(modelFile, "utf8");
 
-    const contents = fs.readFileSync(modelFile, "utf8");
+  const indexOfQuickTypeVar = contents.indexOf("QUICKTYPE_ENDPOINT");
+  if (indexOfQuickTypeVar < 0) {
+    console.error(`Cant find QUICKTYPE_ENDPOINT in ${baseDir}/${modelName}/${modelName}.ts`);
+    console.error(
+      `Please add 'const QUICKTYPE_ENDPOINT = "endpoint"' to the file that is used (or overwritten) as endpoint for quicktyping`
+    );
+    return false;
+  }
 
-    const indexOfQuickTypeVar = contents.indexOf('QUICKTYPE_ENDPOINT');
-    if(indexOfQuickTypeVar < 0) {
-        console.error(`Cant find QUICKTYPE_ENDPOINT in ${baseDir}/${modelName}/${modelName}.ts`);
-        console.error(`Please add 'const QUICKTYPE_ENDPOINT = "endpoint"' to the file that is used (or overwritten) as endpoint for quicktyping`);
-        return false;
+  let endpoint;
+  try {
+    const firstDoubleQuoteAfterConst = contents.indexOf(`"`, indexOfQuickTypeVar) + 1;
+    const firstSingleQuoteAfterConst = contents.indexOf(`'`, indexOfQuickTypeVar) + 1;
+    if (!firstDoubleQuoteAfterConst && !firstSingleQuoteAfterConst) return false;
+
+    let typeOfQuote;
+
+    if (firstDoubleQuoteAfterConst > 0 && firstDoubleQuoteAfterConst < firstSingleQuoteAfterConst || firstSingleQuoteAfterConst <= 0) {
+      typeOfQuote = `"`;
+    } else {
+      typeOfQuote = `'`;
     }
 
-    let endpoint;
-    try {
-        const firstQuoteAfterConst = contents.indexOf(`"`, indexOfQuickTypeVar) + 1;
-        const nextQuoteAfterConst = contents.indexOf(`"`, firstQuoteAfterConst);
+    const firstQuoteAfterConst = contents.indexOf(typeOfQuote, indexOfQuickTypeVar) + 1;
+    const nextQuoteAfterConst = contents.indexOf(typeOfQuote, firstQuoteAfterConst);
 
-        endpoint = contents.substring(
-            firstQuoteAfterConst,
-            nextQuoteAfterConst
-        );
-    } catch (e) {
-        console.error(`Can't parse QUICKTYPE_ENDPOINT in ${baseDir}/${modelName}/${modelName}.ts, make sure it is formatted like 'const QUICKTYPE_ENDPOINT = "endpoint"'`);
-        return false;
+    endpoint = contents.substring(firstQuoteAfterConst, nextQuoteAfterConst);
+  } catch (e) {
+    console.error(
+      `Can't parse QUICKTYPE_ENDPOINT in ${baseDir}/${modelName}/${modelName}.ts, make sure it is formatted like 'const QUICKTYPE_ENDPOINT = "endpoint"'`
+    );
+    return false;
+  }
+
+  if (partOfAllUpdate) {
+    const answers = await inquirer.prompt([
+      {
+        name: "new-endpoint",
+        type: "input",
+        message: `Does the model have a new endpoint (empty to keep endpoint, do not use for All update): ${apiBase}/`,
+      },
+    ]);
+
+    let newEndpoint = answers["new-endpoint"];
+
+    if (newEndpoint && newEndpoint !== endpoint) {
+      const replaceOptions = {
+        files: modelFile,
+        from: [endpoint],
+        to: [newEndpoint],
+      };
+
+      replace(replaceOptions).catch(() => {
+        console.log("Failed at replacing name");
+      });
+
+      console.warn(`You have changed the quicktype endpoint for model ${baseDir}/${modelName}/${modelName}.ts`);
+      console.warn(`The QUICKTYPE_EXAMPLE const has automatically been updated`);
+      console.warn(
+        `DO update the endpoint: () => string variable in the model to match the quicktype endpoint or else typing check will fail`
+      );
+
+      endpoint = newEndpoint;
     }
+  }
 
-   if(partOfAllUpdate) {
-       const answers = await inquirer.prompt([
-           {
-               name: "new-endpoint",
-               type: "input",
-               message: `Does the model have a new endpoint (empty to keep endpoint, do not use for All update): ${apiBase}/`
-           }]);
+  const fileBaseString = `${baseDir}/${modelName}/${modelName}`;
 
-       let newEndpoint = answers["new-endpoint"];
-
-       if(newEndpoint && newEndpoint !== endpoint) {
-           const replaceOptions = {
-               files: modelFile,
-               from: [endpoint],
-               to: [newEndpoint]
-           };
-
-           replace(replaceOptions)
-               .catch(() => {
-                   console.log("Failed at replacing name");
-               });
-
-           console.warn(`You have changed the quicktype endpoint for model ${baseDir}/${modelName}/${modelName}.ts`);
-           console.warn(`The QUICKTYPE_EXAMPLE const has automatically been updated`);
-           console.warn(`DO update the endpoint: () => string variable in the model to match the quicktype endpoint or else typing check will fail`);
-
-           endpoint = newEndpoint;
-       }
-   }
-
-    const fileBaseString = `${baseDir}/${modelName}/${modelName}`;
-
-    if(endpoint) {
-        fetchAndTypeAndWriteToFile(fileBaseString, modelName, endpoint);
-        console.log(`Updated typing for model ${modelName} with endpoint: ${endpoint}`)
-    }
+  if (endpoint) {
+    fetchAndTypeAndWriteToFile(fileBaseString, modelName, endpoint);
+    console.log(`Updated typing for model ${modelName} with endpoint: ${endpoint}`);
+  }
 }
 
 function toPascalCase(string) {
-    const camelCase = string.replace(/(\-\w)/g, function(m) {
-        return m[1].toUpperCase();
-    });
-    return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
+  const camelCase = string.replace(/(\-\w)/g, function (m) {
+    return m[1].toUpperCase();
+  });
+  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 }
 
 async function fetchAndTypeAndWriteToFile(fileBase, name, endpoint) {
-    let isArray = false;
-    try {
-        const { contents, jsonData } = await fetchAndType(`${name}IncomingType`, `${apiBase}/${endpoint}`);
-        if(contents) {
-            fs.writeFileSync(`${fileBase}.types.ts`, contents.join('\n'), "utf8");
-        }
-        if(jsonData) {
-            fs.writeFileSync(`${fileBase}.response.json`,  JSON.stringify(jsonData, null, 2), "utf8");
-        }
-        isArray = Array.isArray(jsonData);
-    } catch (e) {
-        console.error(e);
+  let isArray = false;
+  try {
+    const { contents, jsonData } = await fetchAndType(`${name}IncomingType`, `${apiBase}/${endpoint}`);
+    if (contents) {
+      fs.writeFileSync(`${fileBase}.types.ts`, contents.join("\n"), "utf8");
     }
-    return isArray;
+    if (jsonData) {
+      fs.writeFileSync(`${fileBase}.response.json`, JSON.stringify(jsonData, null, 2), "utf8");
+    }
+    isArray = Array.isArray(jsonData);
+  } catch (e) {
+    console.error(e);
+  }
+  return isArray;
 }
 
-async function fetchAndType(name, endpoint){
+async function fetchAndType(name, endpoint) {
+  try {
+    const data = await fetch(endpoint);
     try {
-        const data = await fetch(endpoint);
-        try {
-            const json = await data.json();
-            const jsonData = json.data || json;
-            const {lines: contents} = await quicktypeJSON('typescript', name, JSON.stringify(jsonData), endpoint);
+      const json = await data.json();
+      const jsonData = json.data || json;
+      const { lines: contents } = await quicktypeJSON("typescript", name, JSON.stringify(jsonData), endpoint);
 
-            return {contents, jsonData};
-        } catch (e) {
-            console.log(`Error creating quicktype definition for endpoint "${endpoint}":`, e)
-        }
-    } catch (e){
-        console.log(`Error fetching endpoint "${endpoint}":`, e)
+      return { contents, jsonData };
+    } catch (e) {
+      console.log(`Error creating quicktype definition for endpoint "${endpoint}":`, e);
     }
+  } catch (e) {
+    console.log(`Error fetching endpoint "${endpoint}":`, e);
+  }
 }
 
 async function quicktypeJSON(targetLanguage, typeName, jsonString, endpoint) {
-    const jsonInput = jsonInputForTargetLanguage(targetLanguage);
+  const jsonInput = jsonInputForTargetLanguage(targetLanguage);
 
-    await jsonInput.addSource({
-        name: typeName,
-        samples: [jsonString],
-    });
+  await jsonInput.addSource({
+    name: typeName,
+    samples: [jsonString],
+  });
 
-    const inputData = new InputData();
-    inputData.addInput(jsonInput);
+  const inputData = new InputData();
+  inputData.addInput(jsonInput);
 
-    const timestamp = Date.now();
+  const timestamp = Date.now();
 
-    return await quicktype({
-        inputData,
-        lang: targetLanguage,
-        leadingComments: [
-            `INCOMING TYPE FOR ${typeName.replace(`IncomingType`, ``)} GENERATED WITH QUICKTYPE THROUGH IN10 COMPONENT GENERATOR`,
-            `Endpoint: ${endpoint}`,
-            `Timestamp: ${timestamp}`,
-            `Time: ${format(timestamp, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")}`
-        ],
-        rendererOptions: {
-            'just-types': 'true'
-        },
-    });
+  return await quicktype({
+    inputData,
+    lang: targetLanguage,
+    leadingComments: [
+      `INCOMING TYPE FOR ${typeName.replace(
+        `IncomingType`,
+        ``
+      )} GENERATED WITH QUICKTYPE THROUGH IN10 COMPONENT GENERATOR`,
+      `Endpoint: ${endpoint}`,
+      `Timestamp: ${timestamp}`,
+      `Time: ${format(timestamp, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")}`,
+    ],
+    rendererOptions: {
+      "just-types": "true",
+    },
+  });
 }
