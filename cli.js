@@ -221,9 +221,15 @@ async function updateModelFiles(modelName, partOfAllUpdate) {
   try {
     const firstDoubleQuoteAfterConst = contents.indexOf(`"`, indexOfQuickTypeVar) + 1;
     const firstSingleQuoteAfterConst = contents.indexOf(`'`, indexOfQuickTypeVar) + 1;
+    if (!firstDoubleQuoteAfterConst && !firstSingleQuoteAfterConst) return false;
 
-    let typeOfQuote =
-      firstDoubleQuoteAfterConst > 0 && firstDoubleQuoteAfterConst < firstSingleQuoteAfterConst ? `"` : `'`;
+    let typeOfQuote;
+
+    if (firstDoubleQuoteAfterConst > 0 && firstDoubleQuoteAfterConst < firstSingleQuoteAfterConst || firstSingleQuoteAfterConst <= 0) {
+      typeOfQuote = `"`;
+    } else {
+      typeOfQuote = `'`;
+    }
 
     const firstQuoteAfterConst = contents.indexOf(typeOfQuote, indexOfQuickTypeVar) + 1;
     const nextQuoteAfterConst = contents.indexOf(typeOfQuote, firstQuoteAfterConst);
