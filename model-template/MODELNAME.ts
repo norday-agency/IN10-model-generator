@@ -30,7 +30,7 @@ const endpoints: ApiEndpoints = {
     // Do not forget to replace MODEL_QUICKTYPE_ENDPOINT if your endpoint is dynamic based on a slug for example
     // Use a regular fetch or cmsGet (note that cmsGet does not directly return MODELNAMEPropsType but is wrapped in CmsGetReturnType<MODELNAMEPropsType>
 // TODO replace the model_quicktype_endpoint
-export const fetchMODELNAME = ({ slug, locale }: MODELNAMEParams) => cmsGet<MODELNAMEIncomingType, MODELNAMEPropsType>(endpoints[locale], locale, MODELNAMETransform);
+export const fetchMODELNAME = ({ slug, locale }: MODELNAMEParams) => cmsGet<MODELNAMEIncomingType, MODELNAMEPropsType>(endpoints[locale], locale, undefined, MODELNAMETransform);
 
 // Client side hook
 export const useMODELNAME = (params: MODELNAMEParams) =>
